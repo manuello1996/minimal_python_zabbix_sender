@@ -195,3 +195,68 @@ asyncio.run(main())
   - Missing `tls_psk_identity`, or invalid PSK setup.
 - `Connection timed out...`
   - Wrong server/port or network issue.
+
+---
+
+## Synchronous version
+
+For projects without `asyncio`, use `zabbix_sender_module_sync.py`.
+
+Provided API:
+
+- `ItemData`
+- `ZabbixResponse`
+- `SendResult`
+- `Sender` (sync class)
+- `send_safe(...)` (sync helper)
+
+### Example S1: Plain TCP (sync helper)
+
+```python
+from zabbix_sender_module_sync import ItemData, send_safe
+
+result = send_safe(
+    server="127.0.0.1",
+    port=10051,
+    items=ItemData(host="sender-test", key="test.trapper.int", value=42),
+)
+print(result.response if result.ok else result.error)
+```
+
+### Example S2: TLS-PSK with inline hex PSK (sync helper)
+
+```python
+from zabbix_sender_module_sync import ItemData, send_safe
+
+result = send_safe(
+    server="127.0.0.1",
+    port=10051,
+    items=ItemData(host="sender-test", key="test.trapper.int", value=42),
+    tls_connect="psk",
+    tls_psk_identity="sender-test-psk",
+    tls_psk="00112233445566778899AABBCCDDEEFF",
+)
+print(result.response if result.ok else result.error)
+```
+
+### Example S3: TLS-PSK with PSK file (sync class)
+
+```python
+from zabbix_sender_module_sync import ItemData, Sender
+
+sender = Sender(
+    "127.0.0.1",
+    10051,
+    tls_connect="psk",
+    tls_psk_identity="sender-test-psk",
+    tls_psk_file="/etc/zabbix/zabbix_agent2.psk",
+)
+
+result = sender.send_safe(
+    [
+        ItemData(host="sender-test", key="test.trapper.int", value=42),
+        ItemData(host="sender-test", key="test.trapper.text", value="long text payload"),
+    ]
+)
+print(result.response if result.ok else result.error)
+```
